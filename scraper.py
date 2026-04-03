@@ -53,9 +53,7 @@ def enviar_correo(ruta_pdf):
 
     cuerpo = f"""Se adjunta el reporte diario de calidad del aire correspondiente al día de hoy.
 
-Reporte generado automáticamente el {datetime.datetime.now().strftime('%d/%m/%Y a las %H:%M')}
-
-Para más información, visita: https://calidaddelaire.puebla.gob.mx
+Reporte generado automáticamente el {datetime.datetime.now().strftime('%d/%m/%Y')}
 """
     msg.attach(MIMEText(cuerpo, 'plain'))
 
