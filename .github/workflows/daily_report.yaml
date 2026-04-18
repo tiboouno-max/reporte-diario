@@ -3,7 +3,7 @@ name: Reporte Diario ICA
 on:
   schedule:
     # 22:58 UTC = 16:45 México (horario de verano) o 17:58 estándar
-    - cron: "40 21 * * *"
+    - cron: "20 21 * * *"
   workflow_dispatch:
 
 permissions:
