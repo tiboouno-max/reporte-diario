@@ -1,33 +1,50 @@
+# Flujo de trabajo para GitHub Actions: genera reporte diario de calidad del aire
+
+
 name: Reporte Diario ICA
 
+
+# Eventos que disparan el flujo
 on:
   schedule:
+    # Programacion: todos los dias a las 22:28 UTC
+    # (equivale a las 16:28 o 17:28 hora de Mexico)
+    # A pesar de que los reportes se deben generar a las 17.15 hora de Mexico
+    # Se programa a las 22:28 UTC para ajustar el delay de Github Actions y 
+    # asegurar que el reporte este disponible entre 17:15 ~ 17:59 hora Mexico.
     - cron: "28 22 * * *"
-  workflow_dispatch:
+  workflow_dispatch:    #  Permite ejecucion manual desde la interfaz de Actions
 
+# Permisos necesarios para hacer push al repositorio
 permissions:
   contents: write
 
 jobs:
   generar-pdf:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest          # Usa la ultima version de Ubuntu disponible
     steps:
+      # 1. Clonar el repositorio
       - uses: actions/checkout@v4
 
+      # 2. Configurar Python 3.10
       - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-
+      
+      # 3. Instalar Google Chrome (necesario para Selenium)
       - name: Instalar Chrome
         run: |
           sudo apt-get update
           sudo apt-get install -y google-chrome-stable
-
+      
+      # 4. Instalar dependencias de Python desde requirements.txt
       - name: Instalar dependencias
         run: pip install -r requirements.txt
 
+      # 5. Ejecutar el script principal
       - name: Ejecutar script
         env:
+          # Credenciales y configuracion leidas desde los secretos del repositorio
           USUARIO: ${{ secrets.USUARIO }}
           CONTRASENA: ${{ secrets.CONTRASENA }}
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
@@ -35,18 +52,22 @@ jobs:
           EMAIL_TO_1: ${{ secrets.EMAIL_TO_1 }}
           EMAIL_TO_2: ${{ secrets.EMAIL_TO_2 }}
           EMAIL_TO_3: ${{ secrets.EMAIL_TO_3 }}
+          EMAIL_TO_4: ${{ secrets.EMAIL_TO_3 }}
         run: python scraper.py
-
+      
+      # 6. Copiar el PDF generado a la carpeta 'reportes/'
       - name: Copiar PDF a carpeta reportes
         run: |
           mkdir -p reportes
           cp descargas_*/"Reporte diario (calidad del aire)"*.pdf reportes/ || echo "No se encontró PDF"
-
+      
+      # 7. Configurar identidad de git para el commit automatico
       - name: Configurar git
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
+      
+      # 8. Agregar, commitear y pushear el nuevo PDF al repositorio
       - name: Commit y push del reporte
         run: |
           git add reportes/
