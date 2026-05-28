@@ -23,6 +23,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
+
 def setup_driver(download_dir):
     """
     Configurar y retornar el driver de Chrome con opciones de descarga.
@@ -35,7 +36,7 @@ def setup_driver(download_dir):
     """
     options = Options()
     # Si se ejecuta en GitHub Actions, activar modo headless y deshabilitar sandbox.
-    if os.environ.get('GITHUB_ACTIONS'):
+    if os.environ.get("GITHUB_ACTIONS"):
         options.add_argument("--headless")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
@@ -48,7 +49,10 @@ def setup_driver(download_dir):
     }
     options.add_experimental_option("prefs", prefs)
     options.add_argument("--window-size=1280,1024")
-    return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+    return webdriver.Chrome(
+        service=Service(ChromeDriverManager().install()), options=options
+    )
+
 
 def enviar_correo(ruta_pdf):
     """
@@ -80,27 +84,31 @@ def enviar_correo(ruta_pdf):
 
     # Construir el mensaje de correo.
     msg = MIMEMultipart()
-    msg['From'] = email_user
-    msg['To'] = ", ".join(destinatarios)
-    msg['Subject'] = f"Reporte diario de calidad del aire - {datetime.datetime.now().strftime('%d/%m/%Y')}"
+    msg["From"] = email_user
+    msg["To"] = ", ".join(destinatarios)
+    msg["Subject"] = (
+        f"Reporte diario de calidad del aire - {datetime.datetime.now().strftime('%d/%m/%Y')}"
+    )
 
     cuerpo = f"""Se adjunta el reporte diario de calidad del aire correspondiente al dia de hoy.
 
-Reporte generado automaticamente el {datetime.datetime.now().strftime('%d/%m/%Y')}
+    Reporte generado automaticamente el {datetime.datetime.now().strftime("%d/%m/%Y")}
 """
-    msg.attach(MIMEText(cuerpo, 'plain'))
+    msg.attach(MIMEText(cuerpo, "plain"))
 
     # Adjuntar el archivo PDF.
     with open(ruta_pdf, "rb") as adjunto:
-        part = MIMEBase('application', 'octet-stream')
+        part = MIMEBase("application", "octet-stream")
         part.set_payload(adjunto.read())
         encoders.encode_base64(part)
-        part.add_header('Content-Disposition', f"attachment; filename={os.path.basename(ruta_pdf)}")
+        part.add_header(
+            "Content-Disposition", f"attachment; filename={os.path.basename(ruta_pdf)}"
+        )
         msg.attach(part)
 
     # Enviar el correo usando el servidor SMTP de Gmail.
     try:
-        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server = smtplib.SMTP("smtp.gmail.com", 587)
         server.starttls()
         server.login(email_user, email_password)
         server.send_message(msg)
@@ -108,6 +116,7 @@ Reporte generado automaticamente el {datetime.datetime.now().strftime('%d/%m/%Y'
         print(f"Correo enviado a {', '.join(destinatarios)}")
     except Exception as e:
         print(f"Error al enviar correo: {e}")
+
 
 def generar_reporte():
     """
@@ -144,12 +153,20 @@ def generar_reporte():
     wait.until(EC.url_contains("administrator.php"))
 
     # ---- Abrir modal de reporte ----
-    reporte_link = wait.until(EC.element_to_be_clickable((By.ID, "sidebar_generar_reporteICA")))
+    reporte_link = wait.until(
+        EC.element_to_be_clickable((By.ID, "sidebar_generar_reporteICA"))
+    )
     driver.execute_script("arguments[0].click();", reporte_link)
-    modal = wait.until(EC.visibility_of_element_located((By.ID, "modal_generar_reporteICA")))
+    modal = wait.until(
+        EC.visibility_of_element_located((By.ID, "modal_generar_reporteICA"))
+    )
 
     # ---- Marcar los tres checkboxes ----
-    for chk_id in ["gricaha_habilitarATL2", "gricaha_habilitarTEX2", "gricaha_habilitarTEH2"]:
+    for chk_id in [
+        "gricaha_habilitarATL2",
+        "gricaha_habilitarTEX2",
+        "gricaha_habilitarTEH2",
+    ]:
         chk = wait.until(EC.element_to_be_clickable((By.ID, chk_id)))
         if not chk.is_selected():
             driver.execute_script("arguments[0].click();", chk)
@@ -164,7 +181,9 @@ def generar_reporte():
     # ---- Esperar descarga ----
     archivo = None
     for _ in range(20):
-        archivos = [f for f in os.listdir(download_dir) if not f.endswith('.crdownload')]
+        archivos = [
+            f for f in os.listdir(download_dir) if not f.endswith(".crdownload")
+        ]
         if archivos:
             archivo = archivos[0]
             break
@@ -205,6 +224,7 @@ def generar_reporte():
     enviar_correo(ruta_destino)
 
     return ruta_destino
+
 
 if __name__ == "__main__":
     print("Iniciando...")
